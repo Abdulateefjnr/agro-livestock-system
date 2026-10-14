@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://your-live-backend-url.com*"
+    },
+    {
+      "source": "/((?!api).*)" ,
+      "destination": "/index.html"
+    }
+  ]
+}
