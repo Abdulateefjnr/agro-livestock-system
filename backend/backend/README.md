@@ -18,7 +18,7 @@ Restart the backend after changing `.env`. The reset email contains a one-time l
 
 For local development, the Vite frontend proxies `/api` requests to `http://localhost:5000`. This also lets a phone using a Dev Tunnel reach the backend through the tunneled frontend; keep `VITE_API_URL=/api` (or leave it unset) in the frontend environment and restart Vite after changing it. For the deployed frontend, `.env.production` sets `VITE_API_URL` to the public backend URL including `/api`; update it if the backend hostname changes.
 
-When deploying the backend on Vercel, set the project root to `backend/backend`. The Express app is exported from `server.js` for Vercel's Express runtime and connects to MongoDB on incoming API requests. Configure `MONGO_URI`, `JWT_SECRET` (at least 32 bytes), and `ADMIN_EMAIL` in the backend Vercel project's environment variables for Production, then redeploy it. The root health route can respond without a database connection; API requests return an explicit 503 response if required backend configuration or MongoDB connectivity is unavailable.
+When deploying the backend as its own Vercel project, set the project's Root Directory to `backend/backend`. Vercel auto-detects the Express app from `index.js`, which exports the app from `server.js`; do not override the framework or build/output commands. Configure `MONGO_URI`, `JWT_SECRET` (at least 32 bytes), and `ADMIN_EMAIL` in the backend Vercel project's environment variables for Production, then redeploy it. The root health route can respond without a database connection; API requests return an explicit 503 response if required backend configuration or MongoDB connectivity is unavailable.
 
 ## Farm records and dashboard
 

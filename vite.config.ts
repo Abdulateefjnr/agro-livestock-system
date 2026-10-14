@@ -4,6 +4,7 @@ import tailwindcss from '@tailwindcss/vite' // 1. Import Tailwind
 
 // https://vite.dev
 export default defineConfig({
+  base: process.env.GITHUB_ACTIONS === 'true' ? '/agro-livestock-system/' : '/',
   plugins: [
     react(),
     tailwindcss(), // 2. Add to plugins
