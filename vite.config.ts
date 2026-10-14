@@ -8,6 +8,9 @@ export default defineConfig({
     react(),
     tailwindcss(), // 2. Add to plugins
   ],
+  build: {
+    chunkSizeWarningLimit: 1000,
+  },
   server: {
     host: '0.0.0.0',
     port: 5173,
@@ -19,8 +22,5 @@ export default defineConfig({
         changeOrigin: true,
       },
     },
-  },
-  build: {
-    chunkSizeWarningLimit: 1000, // ✅ Fixes the chunk size limit warning
   },
 })

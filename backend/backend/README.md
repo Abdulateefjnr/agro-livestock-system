@@ -16,7 +16,9 @@ Password reset email requires SMTP settings:
 
 Restart the backend after changing `.env`. The reset email contains a one-time link that expires after one hour. The API endpoints are `POST /api/auth/forgot-password` and `POST /api/auth/reset-password`.
 
-For local development, the Vite frontend proxies `/api` requests to `http://localhost:5000`. This also lets a phone using a Dev Tunnel reach the backend through the tunneled frontend; keep `VITE_API_URL=/api` (or leave it unset) in the frontend environment and restart Vite after changing it. For a production frontend, set `VITE_API_URL` to the publicly reachable API base URL, including `/api`.
+For local development, the Vite frontend proxies `/api` requests to `http://localhost:5000`. This also lets a phone using a Dev Tunnel reach the backend through the tunneled frontend; keep `VITE_API_URL=/api` (or leave it unset) in the frontend environment and restart Vite after changing it. For the deployed frontend, `.env.production` sets `VITE_API_URL` to the public backend URL including `/api`; update it if the backend hostname changes.
+
+When deploying the backend on Vercel, set the project root to `backend/backend`. The Express app is exported from `server.js` for Vercel's Express runtime and connects to MongoDB on incoming API requests. Configure `MONGO_URI`, `JWT_SECRET` (at least 32 bytes), and `ADMIN_EMAIL` in the backend Vercel project's environment variables for Production, then redeploy it. The root health route can respond without a database connection; API requests return an explicit 503 response if required backend configuration or MongoDB connectivity is unavailable.
 
 ## Farm records and dashboard
 
