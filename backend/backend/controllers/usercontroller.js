@@ -8,6 +8,7 @@ const Activity = require('../models/activity')
 const Farm = require('../models/farm')
 const User = require('../models/user')
 const logActivity = require('../utils/audit')
+const createFrontendUrl = require('../utils/frontendUrl')
 
 const roles = ['admin', 'manager', 'livestock_officer', 'crop_officer', 'accountant', 'staff']
 const statuses = ['active', 'inactive', 'pending', 'suspended']
@@ -71,7 +72,7 @@ const createMailTransport = () => {
 }
 
 const sendInvitationEmail = async (user, token) => {
-  const invitationUrl = new URL('/reset-password', process.env.FRONTEND_URL)
+  const invitationUrl = createFrontendUrl('reset-password')
   invitationUrl.searchParams.set('token', token)
   const transporter = createMailTransport()
   await transporter.sendMail({

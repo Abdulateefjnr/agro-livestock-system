@@ -18,6 +18,12 @@ Restart the backend after changing `.env`. The reset email contains a one-time l
 
 For local development, the Vite frontend proxies `/api` requests to `http://localhost:5000`. This also lets a phone using a Dev Tunnel reach the backend through the tunneled frontend; keep `VITE_API_URL=/api` (or leave it unset) in the frontend environment and restart Vite after changing it. For the deployed frontend, `.env.production` sets `VITE_API_URL` to the public backend URL including `/api`; update it if the backend hostname changes.
 
+## Deploying the frontend
+
+The frontend is deployed separately from this Express backend using the repository's GitHub Pages workflow. In the repository's **Settings → Pages**, set **Build and deployment → Source** to **GitHub Actions**; deploying the repository root directly serves the uncompiled Vite source and will not run the app. Push to `main` or run the `Deploy GitHub Pages` workflow manually to publish the built frontend at `https://abdulateefjnr.github.io/agro-livestock-system/`. The workflow also publishes a fallback page so app routes continue to load when opened directly or refreshed.
+
+Keep the backend deployed separately (for example, as a Vercel project) and make sure `.env.production` points to its public `/api` URL. In the backend host's environment variables, set `FRONTEND_URL` to `https://abdulateefjnr.github.io/agro-livestock-system/` so password reset and invitation emails link to the deployed frontend.
+
 When deploying the backend as its own Vercel project, set the project's Root Directory to `backend/backend`. Vercel auto-detects the Express app from `index.js`, which exports the app from `server.js`; do not override the framework or build/output commands. Configure `MONGO_URI`, `JWT_SECRET` (at least 32 bytes), and `ADMIN_EMAIL` in the backend Vercel project's environment variables for Production, then redeploy it. The root health route can respond without a database connection; API requests return an explicit 503 response if required backend configuration or MongoDB connectivity is unavailable.
 
 ## Farm records and dashboard

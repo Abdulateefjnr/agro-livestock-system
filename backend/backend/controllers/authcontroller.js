@@ -5,6 +5,7 @@ const nodemailer = require('nodemailer')
 const path = require('path')
 const User = require('../models/user')
 const logActivity = require('../utils/audit')
+const createFrontendUrl = require('../utils/frontendUrl')
 
 const isConfiguredAdmin = (email) =>
   Boolean(process.env.ADMIN_EMAIL) &&
@@ -293,7 +294,7 @@ const forgotPassword = async (req, res) => {
           throw new Error('Missing email configuration: FRONTEND_URL')
         }
 
-        const resetUrl = new URL('/reset-password', process.env.FRONTEND_URL)
+        const resetUrl = createFrontendUrl('reset-password')
         resetUrl.searchParams.set('token', resetToken)
 
         stage = 'sending the password reset email'
