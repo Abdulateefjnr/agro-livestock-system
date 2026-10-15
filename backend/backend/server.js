@@ -92,7 +92,7 @@ const startServer = async () => {
   await connectDatabase()
   console.log('MongoDB connected successfully')
 
-  app.listen(port, () => {
+  app.listen(port, '0.0.0.0',  () => {
     console.log(`Server running on http://localhost:${port}`)
   })
 }

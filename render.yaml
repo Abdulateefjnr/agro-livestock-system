@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: agro-livestock-api
+    runtime: node
+    rootDir: backend
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: FRONTEND_URL
+        value: https://agro-livestock-frontend.onrender.com
+
+  - type: web
+    name: agro-livestock-frontend
+    runtime: static
+    buildCommand: npm ci && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://agro-livestock-api.onrender.com/api
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

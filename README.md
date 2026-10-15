@@ -1,5 +1,20 @@
 # React + TypeScript + Vite
 
+## Deploying to Render
+
+Create a Render Blueprint from this repository using `render.yaml`. It creates
+the static frontend and Node.js API services. During setup, provide these
+backend environment variables in Render:
+
+- `MONGO_URI`: MongoDB connection string
+- `JWT_SECRET`: secret of at least 32 bytes
+- `ADMIN_EMAIL`: administrator email address
+
+The Blueprint configures the frontend API URL and the backend's frontend URL
+for the service names declared in `render.yaml`. Configure email provider
+settings (`EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USER`, and `EMAIL_PASS`) in the
+backend service if password-reset email is needed.
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:
