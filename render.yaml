@@ -2,7 +2,7 @@ services:
   - type: web
     name: agro-livestock-api
     runtime: node
-    rootDir: backend
+    rootDir: backend/backend
     buildCommand: npm ci
     startCommand: npm start
     healthCheckPath: /

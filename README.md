@@ -15,6 +15,24 @@ for the service names declared in `render.yaml`. Configure email provider
 settings (`EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USER`, and `EMAIL_PASS`) in the
 backend service if password-reset email is needed.
 
+## Deploying frontend and API to Vercel
+
+Import this repository into Vercel with the project root set to the repository
+root. Use `npm run build` as the build command and `dist` as the output
+directory. The `api/[...path].js` function serves the Express API; the
+production frontend uses `/api` to call it on the same domain.
+
+Add these environment variables in Vercel for Production (and Preview if
+needed):
+
+- `VITE_API_URL`: `/api` (use this instead of any previous separate backend URL)
+- `MONGO_URI`: MongoDB connection string
+- `JWT_SECRET`: secret of at least 32 bytes
+- `ADMIN_EMAIL`: administrator email address
+
+Add `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USER`, and `EMAIL_PASS` if password-reset
+email is needed.
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:
