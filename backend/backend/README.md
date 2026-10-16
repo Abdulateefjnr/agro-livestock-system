@@ -24,7 +24,7 @@ The frontend is deployed separately from this Express backend using the reposito
 
 Keep the backend deployed separately (for example, as a Vercel project) and make sure `.env.production` points to its public `/api` URL. In the backend host's environment variables, set `FRONTEND_URL` to `https://abdulateefjnr.github.io/agro-livestock-system/` so password reset and invitation emails link to the deployed frontend.
 
-When deploying the backend as its own Vercel project, set the project's Root Directory to `backend/backend`. Vercel auto-detects the Express app from `index.js`, which exports the app from `server.js`; do not override the framework or build/output commands. Configure `MONGO_URI`, `JWT_SECRET` (at least 32 bytes), and `ADMIN_EMAIL` in the backend Vercel project's environment variables for Production, then redeploy it. The root health route can respond without a database connection; API requests return an explicit 503 response if required backend configuration or MongoDB connectivity is unavailable.
+When deploying the backend as its own Vercel project, set the project's Root Directory to `backend/backend`. Vercel auto-detects the Express app from `index.js`, which exports the app from `server.js`; do not override the framework or build/output commands. Configure `MONGO_URI`, `JWT_SECRET` (at least 32 bytes), and `ADMIN_EMAIL` in the backend Vercel project's environment variables for Production, then redeploy it. The backend binds its HTTP port before connecting to MongoDB, so hosting platforms can detect it and the root health route can respond even if the database is unavailable. API requests return an explicit 503 response if required backend configuration or MongoDB connectivity is unavailable.
 
 ## Farm records and dashboard
 

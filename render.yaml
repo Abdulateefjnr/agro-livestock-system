@@ -1,3 +1,4 @@
+
 services:
   - type: web
     name: agro-livestock-api
@@ -17,6 +18,18 @@ services:
         sync: false
       - key: FRONTEND_URL
         value: https://agro-livestock-frontend.onrender.com
+      - key: EMAIL_HOST
+        value: smtp.gmail.com
+      - key: EMAIL_PORT
+        value: "465"
+      - key: EMAIL_SECURE
+        value: "true"
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_PASS
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
 
   - type: web
     name: agro-livestock-frontend

@@ -30,6 +30,21 @@ app.get('/', (req, res) => {
 
 let databaseConnection
 
+const getConfigurationError = () => {
+  const missingSettings = ['MONGO_URI', 'JWT_SECRET', 'ADMIN_EMAIL'].filter(
+    (setting) => !process.env[setting]
+  )
+  if (missingSettings.length) {
+    return `Backend configuration is incomplete: ${missingSettings.join(', ')}`
+  }
+  if (Buffer.byteLength(process.env.JWT_SECRET, 'utf8') < 32) {
+    return 'Backend JWT configuration is invalid'
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(process.env.ADMIN_EMAIL.trim())) {
+    return 'Backend administrator configuration is invalid'
+  }
+}
+
 const connectDatabase = async () => {
   if (mongoose.connection.readyState === 1) return
   if (!databaseConnection) {
@@ -42,19 +57,9 @@ const connectDatabase = async () => {
 }
 
 app.use(async (req, res, next) => {
-  const missingSettings = ['MONGO_URI', 'JWT_SECRET', 'ADMIN_EMAIL'].filter(
-    (setting) => !process.env[setting]
-  )
-  if (missingSettings.length) {
-    return res.status(503).json({
-      message: `Backend configuration is incomplete: ${missingSettings.join(', ')}`
-    })
-  }
-  if (Buffer.byteLength(process.env.JWT_SECRET, 'utf8') < 32) {
-    return res.status(503).json({ message: 'Backend JWT configuration is invalid' })
-  }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(process.env.ADMIN_EMAIL.trim())) {
-    return res.status(503).json({ message: 'Backend administrator configuration is invalid' })
+  const configurationError = getConfigurationError()
+  if (configurationError) {
+    return res.status(503).json({ message: configurationError })
   }
   try {
     await connectDatabase()
@@ -72,41 +77,42 @@ app.use('/api/records', recordroutes)
 app.use('/api/routines', routineroutes)
 app.use('/api/users', userroutes)
 
-const startServer = async () => {
-  const missingSettings = ['MONGO_URI', 'JWT_SECRET', 'ADMIN_EMAIL'].filter(
-    (setting) => !process.env[setting]
-  )
 
-  if (missingSettings.length) {
-    throw new Error(`Missing required backend settings: ${missingSettings.join(', ')}`)
+const startServer = () => {
+  const configurationError = getConfigurationError();
+
+  if (configurationError) {
+    console.error(configurationError);
+    process.exitCode = 1;
+    return;
   }
 
-  if (Buffer.byteLength(process.env.JWT_SECRET, 'utf8') < 32) {
-    throw new Error('JWT_SECRET must contain at least 32 bytes')
-  }
+  const server = app.listen(port, '0.0.0.0', () => {
+    console.log(`Server listening on port ${port}`);
 
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(process.env.ADMIN_EMAIL.trim())) {
-    throw new Error('ADMIN_EMAIL must be a valid email address')
-  }
+    connectDatabase()
+      .then(() => {
+        console.log('MongoDB connected successfully');
+      })
+      .catch(() => {
+        console.error(
+          'Backend is listening, but MongoDB is unavailable.'
+        );
+      });
+  });
 
-  await connectDatabase()
-  console.log('MongoDB connected successfully')
+  server.on('error', (error) => {
+    console.error(
+      'Backend server error:',
+      error.code || error.message
+    );
+    process.exitCode = 1;
+  });
+};
 
-  app.listen(port, '0.0.0.0',  () => {
-    console.log(`Server running on http://localhost:${port}`)
-  })
-}
 
 if (require.main === module) {
-  startServer().catch((error) => {
-    const safeMessage =
-      error.message.startsWith('Missing required backend settings:') ||
-      error.message.startsWith('JWT_SECRET must')
-        ? error.message
-        : error.code || 'Check the MongoDB network and access settings'
-    console.error('Backend startup failed:', error.name, safeMessage)
-    process.exitCode = 1
-  })
+  startServer();
 }
 
-module.exports = app
+module.exports = app;
