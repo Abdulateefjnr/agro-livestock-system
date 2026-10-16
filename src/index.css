@@ -978,6 +978,7 @@ section {
 .site-pages-header-user span {
   display: inline-flex;
   align-items: center;
+  gap: 8px;
   min-height: 40px;
   padding: 8px 12px;
   border: 1px solid var(--border);
@@ -991,9 +992,9 @@ section {
 
 .site-pages-header-info svg,
 .site-pages-header-user svg {
+  flex: 0 0 auto;
   color: var(--primary);
   font-size: 16px;
-  padding-right: 10px;
 }
 
 .site-pages-header-user span {

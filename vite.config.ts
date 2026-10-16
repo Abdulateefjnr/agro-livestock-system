@@ -15,7 +15,6 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 5173,
-    strictPort: true,
     allowedHosts: ['tt6k6lb2-5173.uks1.devtunnels.ms'],
     proxy: {
       '/api': {

@@ -24,60 +24,78 @@ const getPublicUser = (user) => ({
   lastLoginAt: user.lastLoginAt
 })
 
+
 const sendPasswordResetEmail = async (email, resetUrl) => {
   const requiredSettings = [
     'EMAIL_HOST',
     'EMAIL_PORT',
     'EMAIL_USER',
     'EMAIL_PASS',
-    'FRONTEND_URL'
-  ]
-  const missingSettings = requiredSettings.filter((setting) => !process.env[setting])
+    'FRONTEND_URL',
+  ];
+
+  const missingSettings = requiredSettings.filter(
+    (setting) => !process.env[setting]
+  );
 
   if (missingSettings.length) {
-    throw new Error(`Missing email configuration: ${missingSettings.join(', ')}`)
+    throw new Error(
+      `Missing email configuration: ${missingSettings.join(', ')}`
+    );
   }
 
-  const port = Number(process.env.EMAIL_PORT)
+  const port = Number(process.env.EMAIL_PORT);
 
   if (!Number.isInteger(port) || port < 1 || port > 65535) {
-    throw new Error('EMAIL_PORT must be a valid port number')
+    throw new Error('EMAIL_PORT must be a valid port number');
   }
 
-  const secureSetting = process.env.EMAIL_SECURE?.toLowerCase()
+  const secureSetting = process.env.EMAIL_SECURE?.toLowerCase();
 
-  if (secureSetting && secureSetting !== 'true' && secureSetting !== 'false') {
-    throw new Error('EMAIL_SECURE must be either true or false')
+  if (
+    secureSetting &&
+    secureSetting !== 'true' &&
+    secureSetting !== 'false'
+  ) {
+    throw new Error('EMAIL_SECURE must be true or false');
   }
 
   const transporter = nodemailer.createTransport({
     host: process.env.EMAIL_HOST,
     port,
-    secure: secureSetting ? secureSetting === 'true' : port === 465,
+    secure: secureSetting
+      ? secureSetting === 'true'
+      : port === 465,
     auth: {
       user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS
-    }
-  })
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+
+  await transporter.verify();
 
   await transporter.sendMail({
     from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
     to: email,
     subject: 'Reset your Agro Livestock password',
-    text: `Use this link to reset your password. It expires in one hour: ${resetUrl}`,
-    html: `<div style="font-family: Arial, sans-serif; color: #333; max-width: 560px;">
-      <img src="cid:agro-livestock-logo" alt="Agro Livestock" width="280" style="display: block; max-width: 100%; height: auto; margin-bottom: 24px;">
-      <p>We received a request to reset your Agro Livestock password.</p>
-      <p><a href="${resetUrl}">Reset your password</a></p>
-      <p>This link expires in one hour. If you did not request a reset, you can ignore this email.</p>
-    </div>`,
-    attachments: [{
-      filename: 'agro-livestock-logo.png',
-      path: path.resolve(__dirname, '../../../src/assets/logo.png'),
-      cid: 'agro-livestock-logo'
-    }]
-  })
-}
+    text: `Reset your password using this link. It expires in one hour: ${resetUrl}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 560px; margin: auto;">
+        <h2>Reset your password</h2>
+        <p>We received a request to reset your Agro Livestock password.</p>
+        <p>
+          <a href="${resetUrl}"
+             style="background:#2E7D32;color:white;padding:12px 20px;text-decoration:none;border-radius:6px;">
+            Reset Password
+          </a>
+        </p>
+        <p>This link expires in one hour.</p>
+        <p>If you did not request this, you can ignore this email.</p>
+      </div>
+    `,
+  });
+};
+
 
 
 // SIGN UP

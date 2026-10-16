@@ -147,6 +147,7 @@ function Dashboard() {
   useEffect(() => {
     let active = true;
     let requestInProgress = false;
+    let weatherRequestInProgress = false;
     const loadSummary = async () => {
       if (!active || requestInProgress) return;
       requestInProgress = true;
@@ -177,6 +178,9 @@ function Dashboard() {
     window.addEventListener("storage", handleStorageChange);
 
     const updateWeather = async () => {
+      if (!active || weatherRequestInProgress) return;
+      weatherRequestInProgress = true;
+
       try {
         const response = await fetch(
           "https://api.open-meteo.com/v1/forecast?latitude=8.8833&longitude=7.8667&current=temperature_2m,weather_code&timezone=Africa%2FLagos",
@@ -198,11 +202,17 @@ function Dashboard() {
           );
         }
 
-        setWeather({ temperature, code });
-        setWeatherUnavailable(false);
+        if (active) {
+          setWeather({ temperature, code });
+          setWeatherUnavailable(false);
+        }
       } catch (error) {
-        console.error("Unable to load current weather:", error);
-        setWeatherUnavailable(true);
+        if (active) {
+          console.error("Unable to load current weather:", error);
+          setWeatherUnavailable(true);
+        }
+      } finally {
+        weatherRequestInProgress = false;
       }
     };
 
@@ -246,7 +256,6 @@ function Dashboard() {
               <span>
                 <FontAwesomeIcon
                   icon={weather ? getWeatherIcon(weather.code) : faCloudSun}
-                  className="me-2 align-middle"
                   aria-hidden="true"
                 />
                 Keffi, NG:{" "}
@@ -257,8 +266,15 @@ function Dashboard() {
                     : "Loading weather..."}
               </span>
               <span>
-                <FontAwesomeIcon icon={faClock} className="me-2 align-middle" aria-hidden="true" />
-                Last login: {formattedLastLogin}
+                <FontAwesomeIcon icon={faClock} aria-hidden="true" />
+                Last login:{" "}
+                {validLastLogin ? (
+                  <time dateTime={lastLogin.toISOString()}>
+                    {formattedLastLogin}
+                  </time>
+                ) : (
+                  formattedLastLogin
+                )}
               </span>
             </div>
             <div className="site-pages-header-user">
