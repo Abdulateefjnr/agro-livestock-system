@@ -82,7 +82,9 @@ function getCategory(record: ReportRecord) {
 }
 
 function csvCell(value: string | number) {
-  return `"${String(value).replaceAll('"', '""')}"`;
+  const text = String(value);
+  const safe = /^[\s]*[=+@-]/.test(text) ? `'${text}` : text;
+  return `"${safe.replaceAll('"', '""')}"`;
 }
 
 function Reports() {

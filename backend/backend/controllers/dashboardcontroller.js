@@ -23,78 +23,9 @@ const getDashboardSummary = async (req, res) => {
     const [livestockCount, activeCropSummary, salesSummary, expensesSummary] =
       await Promise.all([
         Livestock.countDocuments(recordScope),
-        Crop.aggregate([
-          { $match: { ...recordScope, status: 'active' } },
-          {
-            $group: {
-              _id: null,
-              count: { $sum: 1 },
-              plantedHectares: { $sum: '$plantedHectares' }
-            }
-          }
-        ]),
-        Sale.aggregate([
-          {
-            $match: {
-              ...recordScope,
-              date: { $gte: previousMonthStart, $lt: nextMonthStart }
-            }
-          },
-          {
-            $group: {
-              _id: null,
-              currentMonth: {
-                $sum: {
-                  $cond: [
-                    { $gte: ['$date', currentMonthStart] },
-                    '$amount',
-                    0
-                  ]
-                }
-              },
-              previousMonth: {
-                $sum: {
-                  $cond: [
-                    { $lt: ['$date', currentMonthStart] },
-                    '$amount',
-                    0
-                  ]
-                }
-              }
-            }
-          }
-        ]),
-        Expense.aggregate([
-          {
-            $match: {
-              ...recordScope,
-              date: { $gte: previousMonthStart, $lt: nextMonthStart }
-            }
-          },
-          {
-            $group: {
-              _id: null,
-              currentMonth: {
-                $sum: {
-                  $cond: [
-                    { $gte: ['$date', currentMonthStart] },
-                    '$amount',
-                    0
-                  ]
-                }
-              },
-              previousMonth: {
-                $sum: {
-                  $cond: [
-                    { $lt: ['$date', currentMonthStart] },
-                    '$amount',
-                    0
-                  ]
-                }
-              }
-            }
-          }
-        ])
+        Crop.summarize({ ...recordScope, status: 'active' }, { count: true, sums: { plantedHectares: 'plantedHectares' } }),
+        Sale.periodTotals({ ...recordScope, date: { $gte: previousMonthStart, $lt: nextMonthStart } }, currentMonthStart),
+        Expense.periodTotals({ ...recordScope, date: { $gte: previousMonthStart, $lt: nextMonthStart } }, currentMonthStart)
       ])
 
     res.json({
@@ -146,22 +77,10 @@ const getFinancialMonitoring = async (req, res) => {
     const upcomingThrough = new Date(today)
     upcomingThrough.setUTCDate(upcomingThrough.getUTCDate() + 7)
 
-    const aggregateMonthly = (Model) => Model.aggregate([
-      {
-        $match: {
-          ...farmScope,
-          date: { $gte: periodStart, $lt: nextPeriodStart }
-        }
-      },
-      {
-        $group: {
-          _id: {
-            $dateToString: { format: '%Y-%m', date: '$date', timezone: 'UTC' }
-          },
-          total: { $sum: '$amount' }
-        }
-      }
-    ])
+    const aggregateMonthly = (Model) => Model.monthlyTotals({
+      ...farmScope,
+      date: { $gte: periodStart, $lt: nextPeriodStart }
+    })
 
     const [sales, expenses, lowStock, farmsNeedingAttention, inactiveCrops, untaggedLivestock, routines] = await Promise.all([
       canViewSales ? aggregateMonthly(Sale) : [],
@@ -177,7 +96,7 @@ const getFinancialMonitoring = async (req, res) => {
             .lean()
         : [],
       Farm.find({ ...farmAccessScope, status: { $in: ['inactive', 'maintenance'] } })
-        .select('name location')
+        .select('name location status')
         .sort({ name: 1 })
         .lean(),
       canViewCrops

@@ -1,0 +1,20 @@
+name: Validate application
+on:
+  push:
+  pull_request:
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm ci --prefix backend/backend --ignore-scripts
+      - run: npm run lint
+      - run: npm run build
+      - run: npm test
+      - run: npm audit --omit=dev
+      - run: npm audit --prefix backend/backend --omit=dev

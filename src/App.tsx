@@ -191,7 +191,7 @@ function Login() {
                 </div>
               )}
               <span>
-                  Don't have an account?{' '}
+                  Already have an account?{' '}
                   <a
                     href="#"
                     onClick={(e) => {
@@ -200,7 +200,7 @@ function Login() {
                       setIsSignUp(false)
                     }}
                   >
-                    Sign up
+                    Login
                   </a>
                 </span>
               <div className="login-input">
@@ -223,6 +223,8 @@ function Login() {
                   <FontAwesomeIcon icon={faLock} aria-hidden="true" />
                     <input
                       id="signup-password"
+                      minLength={8}
+                      autoComplete="new-password"
                       value={signupPassword}
                       onChange={(e) => setSignupPassword(e.target.value)}
                       type={showSignupPassword ? "text" : "password"}
@@ -249,7 +251,7 @@ function Login() {
               <img className='login-log-icon' src={logo} alt="" />
               <h1>welcome back!</h1>
               <span>
-                  Already have an account?{' '}
+                  Don't have an account?{' '}
                   <a
                     href="#"
                     onClick={(e) => {
@@ -258,7 +260,7 @@ function Login() {
                       setIsSignUp(true)
                     }}
                   >
-                    Login
+                    Sign up
                   </a>
                 </span>
               <div className="login-input">
@@ -299,7 +301,7 @@ function Login() {
                     </button>
                 </div>
               </div>
-              <button type='submit' className='login-button'>Login in</button>
+              <button type='submit' className='login-button'>Log in</button>
               <span className='span-2'>Forgot password? <a href="#" onClick={(e) => {
                 e.preventDefault()
                 setIsForgotPassword(true)

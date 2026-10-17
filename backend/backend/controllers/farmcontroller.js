@@ -1,10 +1,11 @@
-const mongoose = require('mongoose')
+const { isValidId } = require('../database')
 const Crop = require('../models/crop')
 const Expense = require('../models/expense')
 const Farm = require('../models/farm')
 const Inventory = require('../models/inventory')
 const Livestock = require('../models/livestock')
 const Sale = require('../models/sale')
+const Routine = require('../models/routine')
 const { canReadRecord, getAccessibleFarmIds } = require('../middleware/permissions')
 const logActivity = require('../utils/audit')
 
@@ -40,32 +41,11 @@ const getPerformanceByFarm = async (farmIds) => {
 
   const match = { farmId: { $in: farmIds } }
   const [livestock, crops, sales, expenses, inventory] = await Promise.all([
-    Livestock.aggregate([
-      { $match: match },
-      { $group: { _id: '$farmId', count: { $sum: 1 } } }
-    ]),
-    Crop.aggregate([
-      { $match: { ...match, status: 'active' } },
-      {
-        $group: {
-          _id: '$farmId',
-          count: { $sum: 1 },
-          plantedHectares: { $sum: '$plantedHectares' }
-        }
-      }
-    ]),
-    Sale.aggregate([
-      { $match: match },
-      { $group: { _id: '$farmId', total: { $sum: '$amount' } } }
-    ]),
-    Expense.aggregate([
-      { $match: match },
-      { $group: { _id: '$farmId', total: { $sum: '$amount' } } }
-    ]),
-    Inventory.aggregate([
-      { $match: match },
-      { $group: { _id: '$farmId', count: { $sum: 1 } } }
-    ])
+    Livestock.summarize(match, { groupBy: 'farmId', count: true }),
+    Crop.summarize({ ...match, status: 'active' }, { groupBy: 'farmId', count: true, sums: { plantedHectares: 'plantedHectares' } }),
+    Sale.summarize(match, { groupBy: 'farmId', sums: { total: 'amount' } }),
+    Expense.summarize(match, { groupBy: 'farmId', sums: { total: 'amount' } }),
+    Inventory.summarize(match, { groupBy: 'farmId', count: true })
   ])
 
   const performance = new Map()
@@ -146,7 +126,7 @@ const createFarm = async (req, res) => {
 }
 
 const updateFarm = async (req, res) => {
-  if (!mongoose.isValidObjectId(req.params.id)) {
+  if (!isValidId(req.params.id)) {
     return res.status(400).json({ message: 'Invalid farm ID' })
   }
 
@@ -155,7 +135,7 @@ const updateFarm = async (req, res) => {
     const accessFilter = accessibleFarmIds === null
       ? {}
       : { _id: { $in: accessibleFarmIds } }
-    const farm = await Farm.findOne({ _id: req.params.id, ...accessFilter })
+    const farm = await Farm.findOne({ $and: [{ _id: req.params.id }, accessFilter] })
     if (!farm) return res.status(404).json({ message: 'Farm not found' })
 
     Object.assign(farm, getFields(req.body))
@@ -174,7 +154,7 @@ const updateFarm = async (req, res) => {
 }
 
 const deleteFarm = async (req, res) => {
-  if (!mongoose.isValidObjectId(req.params.id)) {
+  if (!isValidId(req.params.id)) {
     return res.status(400).json({ message: 'Invalid farm ID' })
   }
 
@@ -187,7 +167,8 @@ const deleteFarm = async (req, res) => {
       Crop.countDocuments({ farmId: farm._id }),
       Sale.countDocuments({ farmId: farm._id }),
       Expense.countDocuments({ farmId: farm._id }),
-      Inventory.countDocuments({ farmId: farm._id })
+      Inventory.countDocuments({ farmId: farm._id }),
+      Routine.countDocuments({ farmId: farm._id })
     ])
 
     if (linkedCounts.some((count) => count > 0)) {

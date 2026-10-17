@@ -1,7 +1,7 @@
 const bcrypt = require('bcryptjs')
 const crypto = require('crypto')
 const fs = require('fs/promises')
-const mongoose = require('mongoose')
+const { isValidId } = require('../database')
 const nodemailer = require('nodemailer')
 const path = require('path')
 const Activity = require('../models/activity')
@@ -14,7 +14,7 @@ const roles = ['admin', 'manager', 'livestock_officer', 'crop_officer', 'account
 const statuses = ['active', 'inactive', 'pending', 'suspended']
 const safeUserFields =
   '_id fullName email phone role assignedFarmIds farmAssignmentsConfigured profilePicture status isActive createdAt lastLoginAt'
-const profileDirectory = path.resolve(__dirname, '../uploads/profile-pictures')
+const profileDirectory = require('../utils/profileDirectory')
 
 const isConfiguredAdmin = (email) =>
   Boolean(process.env.ADMIN_EMAIL) &&
@@ -41,7 +41,7 @@ const serializeUser = (user) => ({
 })
 
 const validateFarmAssignments = async (farmIds) => {
-  if (!Array.isArray(farmIds) || farmIds.some((id) => !mongoose.isValidObjectId(id))) {
+  if (!Array.isArray(farmIds) || farmIds.some((id) => !isValidId(id))) {
     return false
   }
   const uniqueIds = [...new Set(farmIds.map(String))]
@@ -51,7 +51,7 @@ const validateFarmAssignments = async (farmIds) => {
 }
 
 const createMailTransport = () => {
-  const requiredSettings = ['EMAIL_HOST', 'EMAIL_PORT', 'EMAIL_USER', 'EMAIL_PASS', 'FRONTEND_URL']
+  const requiredSettings = ['EMAIL_HOST', 'EMAIL_PORT', 'EMAIL_USER', 'EMAIL_PASS']
   const missingSettings = requiredSettings.filter((setting) => !process.env[setting])
   if (missingSettings.length) {
     throw new Error(`Missing email configuration: ${missingSettings.join(', ')}`)
@@ -116,7 +116,7 @@ const getImageFromDataUrl = (imageData) => {
 
 const getTargetUser = async (req, res, id = req.params.id) => {
   if (id === 'me') id = req.userId
-  if (!mongoose.isValidObjectId(id)) {
+  if (!isValidId(id)) {
     res.status(400).json({ message: 'Invalid user ID' })
     return null
   }
@@ -226,7 +226,7 @@ const createUser = async (req, res) => {
 }
 
 const resendInvitation = async (req, res) => {
-  if (!mongoose.isValidObjectId(req.params.id)) {
+  if (!isValidId(req.params.id)) {
     return res.status(400).json({ message: 'Invalid user ID' })
   }
   let user
@@ -270,7 +270,7 @@ const resendInvitation = async (req, res) => {
 }
 
 const updateUser = async (req, res) => {
-  if (!mongoose.isValidObjectId(req.params.id)) {
+  if (!isValidId(req.params.id)) {
     return res.status(400).json({ message: 'Invalid user ID' })
   }
 
@@ -461,7 +461,7 @@ const removeProfilePicture = async (req, res) => {
 }
 
 const revokeSessions = async (req, res) => {
-  if (!mongoose.isValidObjectId(req.params.id)) {
+  if (!isValidId(req.params.id)) {
     return res.status(400).json({ message: 'Invalid user ID' })
   }
   try {

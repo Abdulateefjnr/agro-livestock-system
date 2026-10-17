@@ -40,15 +40,6 @@ const authenticate = async (req, res, next) => {
       await user.save()
     }
 
-    if (
-      process.env.ADMIN_EMAIL &&
-      user.email === process.env.ADMIN_EMAIL.trim().toLowerCase() &&
-      user.role !== 'admin'
-    ) {
-      user.role = 'admin'
-      await user.save()
-    }
-
     req.userId = String(user._id)
     req.userRole = user.role
     req.assignedFarmIds = (user.assignedFarmIds ?? []).map(String)

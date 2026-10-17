@@ -1,45 +1,27 @@
-
 services:
   - type: web
-    name: agro-livestock-api
+    name: agro-livestock
     runtime: node
-    rootDir: backend/backend
-    buildCommand: npm ci
+    plan: free
+    buildCommand: npm run build:render
     startCommand: npm start
-    healthCheckPath: /
+    healthCheckPath: /healthz
     envVars:
       - key: NODE_ENV
         value: production
-      - key: MONGO_URI
-        sync: false
+      - key: NODE_VERSION
+        value: "22"
+      - key: SEED_DEMO_DATA
+        value: "true"
+      - key: VITE_API_URL
+        value: /api
+      - key: UPLOAD_DIR
+        value: /tmp/agro-livestock/profile-pictures
+      - key: DATABASE_PATH
+        value: /tmp/agro-livestock/agro.sqlite
       - key: JWT_SECRET
-        sync: false
+        generateValue: true
       - key: ADMIN_EMAIL
         sync: false
-      - key: FRONTEND_URL
-        value: https://agro-livestock-frontend.onrender.com
-      - key: EMAIL_HOST
-        value: smtp.gmail.com
-      - key: EMAIL_PORT
-        value: "465"
-      - key: EMAIL_SECURE
-        value: "true"
-      - key: EMAIL_USER
+      - key: ADMIN_PASSWORD
         sync: false
-      - key: EMAIL_PASS
-        sync: false
-      - key: EMAIL_FROM
-        sync: false
-
-  - type: web
-    name: agro-livestock-frontend
-    runtime: static
-    buildCommand: npm ci && npm run build
-    staticPublishPath: ./dist
-    envVars:
-      - key: VITE_API_URL
-        value: https://agro-livestock-api.onrender.com/api
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html

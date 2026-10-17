@@ -160,6 +160,7 @@ function getNextDueDate(date: string, repeat: string) {
 }
 
 function SettingsPage() {
+  const canManageRoutines = ["admin", "manager", "livestock_officer", "crop_officer"].includes(sessionStorage.getItem("userRole") ?? "staff");
   const [form, setForm] = useState<SettingsPreferences>(readPreferences);
   const [profilePicture, setProfilePicture] = useState(() => {
     try {
@@ -208,6 +209,10 @@ function SettingsPage() {
       });
     fetchFarmRoutines()
       .then(async (nextRoutines) => {
+        if (!canManageRoutines) {
+          if (active) setTasks(nextRoutines);
+          return;
+        }
         const legacyTasks = readStoredList<Record<string, unknown>>(LEGACY_ROUTINES_KEY);
         const existingClientIds = new Set(nextRoutines.map((task) => task.clientId).filter(Boolean));
         const migratedTasks: FarmRoutine[] = [];
@@ -275,7 +280,7 @@ function SettingsPage() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [canManageRoutines]);
 
   const updateField = <K extends keyof SettingsPreferences>(
     field: K,
@@ -320,6 +325,7 @@ function SettingsPage() {
 
   const addRoutine = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!canManageRoutines) return;
     setRoutineSaving(true);
     setRoutineError("");
     try {
@@ -345,6 +351,7 @@ function SettingsPage() {
   };
 
   const toggleRoutine = async (task: FarmRoutine) => {
+    if (!canManageRoutines) return;
     const completingRepeatingTask = !task.completed && task.repeat !== "Does not repeat";
     const nextDueDate = completingRepeatingTask
       ? getNextDueDate(task.dueDate, task.repeat)
@@ -370,6 +377,7 @@ function SettingsPage() {
   };
 
   const deleteRoutine = async (task: FarmRoutine) => {
+    if (!canManageRoutines) return;
     setRoutineSaving(true);
     setRoutineError("");
     try {
@@ -501,21 +509,21 @@ function SettingsPage() {
                     <div className="settings-panel-icon settings-panel-icon-accent"><FontAwesomeIcon icon={faCalendarDays} aria-hidden="true" /></div>
                     <div><h2 id="routine-settings-heading">Farm routine planner</h2><p>Create recurring reminders for everyday farm work.</p></div>
                   </div>
-                  <form className="settings-routine-form" onSubmit={addRoutine}>
+                  {canManageRoutines ? <form className="settings-routine-form" onSubmit={addRoutine}>
                     <label htmlFor="routine-title"><span>Task</span><input id="routine-title" value={taskTitle} onChange={(event) => setTaskTitle(event.target.value)} placeholder="e.g. Check water troughs" required /></label>
                     <label htmlFor="routine-type"><span>Activity</span><select id="routine-type" value={taskType} onChange={(event) => setTaskType(event.target.value as FarmRoutine["type"])}><option>Feeding</option><option>Vaccination</option><option>Irrigation</option><option>Fertilizing</option><option>Planting</option><option>Harvesting</option><option>Other</option></select></label>
                     <label htmlFor="routine-farm"><span>Farm</span><select id="routine-farm" value={taskFarmId} onChange={(event) => setTaskFarmId(event.target.value)}><option value="">No specific farm</option>{farms.map((farm) => <option key={farm._id} value={farm._id}>{farm.name}</option>)}</select></label>
                     <label htmlFor="routine-date"><span>Next due</span><input id="routine-date" type="date" value={taskDueDate} onChange={(event) => setTaskDueDate(event.target.value)} required /></label>
                     <label htmlFor="routine-repeat"><span>Repeat</span><select id="routine-repeat" value={taskRepeat} onChange={(event) => setTaskRepeat(event.target.value as FarmRoutine["repeat"])}><option>Does not repeat</option><option>Daily</option><option>Weekly</option><option>Monthly</option></select></label>
                     <button className="settings-button settings-button-primary" type="submit" disabled={routineSaving}><FontAwesomeIcon icon={faPlus} aria-hidden="true" /> {routineSaving ? "Saving..." : "Add reminder"}</button>
-                  </form>
+                  </form> : <p className="settings-inline-note">Your role can view farm routines. Contact a manager to add or change reminders.</p>}
                   {routineError && <p className="settings-inline-note" role="alert">{routineError}</p>}
-                  {!routinesLoading && !routineError && tasks.length === 0 ? <p className="settings-empty-state">No routines yet. Add a farm task above to start planning.</p> : null}
+                  {!routinesLoading && !routineError && tasks.length === 0 ? <p className="settings-empty-state">No routines have been added yet.</p> : null}
                   {tasks.length > 0 && (
                     <ul className="settings-routine-list">
                       {tasks.map((task) => <li key={task.id} className={task.completed ? "is-complete" : ""}>
-                        <label className="settings-routine-check"><input type="checkbox" checked={task.completed} disabled={routineSaving} onChange={() => void toggleRoutine(task)} /><span><strong>{task.title}</strong><small>{task.type} · {task.farmName || "All farms"} · {formatDate(task.dueDate)} · {task.repeat}</small></span></label>
-                        <button type="button" className="settings-icon-button" aria-label={`Remove ${task.title}`} disabled={routineSaving} onClick={() => void deleteRoutine(task)}><FontAwesomeIcon icon={faTrashCan} aria-hidden="true" /></button>
+                        <label className="settings-routine-check"><input type="checkbox" checked={task.completed} disabled={routineSaving || !canManageRoutines} onChange={() => void toggleRoutine(task)} /><span><strong>{task.title}</strong><small>{task.type} · {task.farmName || "Personal reminder"} · {formatDate(task.dueDate)} · {task.repeat}</small></span></label>
+                        {canManageRoutines && <button type="button" className="settings-icon-button" aria-label={`Remove ${task.title}`} disabled={routineSaving} onClick={() => void deleteRoutine(task)}><FontAwesomeIcon icon={faTrashCan} aria-hidden="true" /></button>}
                       </li>)}
                     </ul>
                   )}

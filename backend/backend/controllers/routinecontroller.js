@@ -1,4 +1,4 @@
-const mongoose = require('mongoose')
+const { isValidId } = require('../database')
 const Farm = require('../models/farm')
 const Routine = require('../models/routine')
 const { getAccessibleFarmIds } = require('../middleware/permissions')
@@ -68,7 +68,7 @@ const validateRoutineInput = async (body, req, current = {}) => {
 
   let normalizedFarmId = null
   if (farmId) {
-    if (!mongoose.isValidObjectId(farmId)) return { error: 'Select a valid farm' }
+    if (!isValidId(farmId)) return { error: 'Select a valid farm' }
     const farm = await Farm.exists({ _id: farmId })
     if (!farm) return { error: 'Selected farm was not found' }
     const accessibleFarmIds = await getAccessibleFarmIds(req)
@@ -147,7 +147,7 @@ const createRoutine = async (req, res) => {
 }
 
 const updateRoutine = async (req, res) => {
-  if (!mongoose.isValidObjectId(req.params.id)) {
+  if (!isValidId(req.params.id)) {
     return res.status(400).json({ message: 'Invalid routine ID' })
   }
   try {
@@ -180,7 +180,7 @@ const updateRoutine = async (req, res) => {
 }
 
 const deleteRoutine = async (req, res) => {
-  if (!mongoose.isValidObjectId(req.params.id)) {
+  if (!isValidId(req.params.id)) {
     return res.status(400).json({ message: 'Invalid routine ID' })
   }
   try {

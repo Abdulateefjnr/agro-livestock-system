@@ -2,14 +2,10 @@ const bcrypt = require('bcryptjs')
 const crypto = require('crypto')
 const jwt = require('jsonwebtoken')
 const nodemailer = require('nodemailer')
-const path = require('path')
 const User = require('../models/user')
 const logActivity = require('../utils/audit')
 const createFrontendUrl = require('../utils/frontendUrl')
 
-const isConfiguredAdmin = (email) =>
-  Boolean(process.env.ADMIN_EMAIL) &&
-  email.trim().toLowerCase() === process.env.ADMIN_EMAIL.trim().toLowerCase()
 
 const getPublicUser = (user) => ({
   id: user._id,
@@ -31,7 +27,6 @@ const sendPasswordResetEmail = async (email, resetUrl) => {
     'EMAIL_PORT',
     'EMAIL_USER',
     'EMAIL_PASS',
-    'FRONTEND_URL',
   ];
 
   const missingSettings = requiredSettings.filter(
@@ -119,6 +114,13 @@ const signup = async (req, res) => {
       return res.status(400).json({ message: 'Enter a valid email address' })
     }
 
+    if (email === process.env.ADMIN_EMAIL?.trim().toLowerCase()) {
+      return res.status(403).json({ message: 'This address is reserved for the administrator. Contact the system owner.' })
+    }
+    if (password.length < 8 || Buffer.byteLength(password, 'utf8') > 72) {
+      return res.status(400).json({ message: 'Password must contain at least 8 characters and at most 72 bytes' })
+    }
+
     // Check existing user
     stage = 'checking for an existing user'
     const normalizedEmail = email
@@ -144,7 +146,7 @@ const signup = async (req, res) => {
       fullName,
       email: normalizedEmail,
       password: hashedPassword,
-      role: isConfiguredAdmin(normalizedEmail) ? 'admin' : 'staff',
+      role: 'staff',
       farmAssignmentsConfigured: true,
       status: 'active',
       isActive: true,
@@ -235,7 +237,6 @@ const login = async (req, res) => {
       return res.status(403).json({ message: 'This account is not active. Contact an administrator.' })
     }
 
-    if (isConfiguredAdmin(email)) user.role = 'admin'
 
     stage = 'recording the login time'
     user.lastLoginAt = new Date()
@@ -283,7 +284,7 @@ const forgotPassword = async (req, res) => {
   let stage = 'validating the email address'
 
   try {
-    const email = typeof req.body.email === 'string'
+    const email = typeof req.body?.email === 'string'
       ? req.body.email.trim().toLowerCase()
       : ''
 
@@ -308,7 +309,7 @@ const forgotPassword = async (req, res) => {
       await user.save()
 
       try {
-        if (!process.env.FRONTEND_URL) {
+        if (!process.env.FRONTEND_URL && !process.env.RENDER_EXTERNAL_URL) {
           throw new Error('Missing email configuration: FRONTEND_URL')
         }
 
@@ -340,14 +341,14 @@ const resetPassword = async (req, res) => {
   let stage = 'validating the reset request'
 
   try {
-    const { token, password } = req.body
+    const { token, password } = req.body ?? {}
 
     if (typeof token !== 'string' || !token || typeof password !== 'string' || !password) {
       return res.status(400).json({ message: 'A reset token and new password are required' })
     }
 
-    if (password.length < 8) {
-      return res.status(400).json({ message: 'Password must be at least 8 characters long' })
+    if (password.length < 8 || Buffer.byteLength(password, 'utf8') > 72) {
+      return res.status(400).json({ message: 'Password must contain at least 8 characters and at most 72 bytes' })
     }
 
     const resetTokenHash = crypto
@@ -368,17 +369,23 @@ const resetPassword = async (req, res) => {
     }
 
     stage = 'hashing the new password'
-    user.password = await bcrypt.hash(password, 10)
+    const hashedPassword = await bcrypt.hash(password, 10)
+    const changes = { password: hashedPassword }
     if (user.status === 'pending') {
-      user.status = 'active'
-      user.isActive = true
+      changes.status = 'active'
+      changes.isActive = true
     }
-    user.sessionVersion = (user.sessionVersion ?? 0) + 1
-    user.passwordResetToken = undefined
-    user.passwordResetExpires = undefined
-
     stage = 'saving the new password'
-    await user.save()
+    const updated = await User.findOneAndUpdate({
+      _id: user._id,
+      passwordResetToken: resetTokenHash,
+      passwordResetExpires: { $gt: new Date() }
+    }, {
+      $set: changes,
+      $inc: { sessionVersion: 1 },
+      $unset: { passwordResetToken: '', passwordResetExpires: '' }
+    }, { returnDocument: 'after', runValidators: true })
+    if (!updated) return res.status(400).json({ message: 'This password reset link is invalid or has expired' })
     await logActivity({
       actorId: user._id,
       targetUserId: user._id,

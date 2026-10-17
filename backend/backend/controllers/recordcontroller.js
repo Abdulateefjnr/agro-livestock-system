@@ -1,4 +1,4 @@
-const mongoose = require('mongoose')
+const { isValidId } = require('../database')
 const Crop = require('../models/crop')
 const Expense = require('../models/expense')
 const Farm = require('../models/farm')
@@ -50,9 +50,9 @@ const getRecordAccessFilter = async (req) => {
 }
 
 const validateFarmAssignment = async (fields, req) => {
-  if (!Object.prototype.hasOwnProperty.call(fields, 'farmId')) return true
+  if (!Object.prototype.hasOwnProperty.call(fields, 'farmId')) return req.method !== 'POST' || req.userRole === 'admin'
   if (!fields.farmId) return req.userRole === 'admin'
-  if (!mongoose.isValidObjectId(fields.farmId)) return false
+  if (!isValidId(fields.farmId)) return false
   if (req.userRole === 'admin') {
     return Boolean(await Farm.exists({ _id: fields.farmId }))
   }
